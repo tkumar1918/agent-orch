@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Agent-run. Sync local code to the shared contract; report drift vs the last sync.
+# FE regenerates the typed client + prints the mock command; BE prints provider verify.
+# One command for /contract-sync.
+#
+#   contract_sync.sh [--ref <branch|sha>]   (default ref: main = released contract)
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+eval "$(python3 "$DIR/_config.py")" || exit 1
+
+REF="main"
+if [ "${1:-}" = "--ref" ]; then REF="${2:?--ref needs a value}"; fi
+
+cd "$CFG_COORDINATION_CLONE"
+git fetch -q origin 2>/dev/null || true
+git checkout -q "$REF" 2>/dev/null || git checkout -q -b "$REF" "origin/$REF" 2>/dev/null || true
+git pull -q 2>/dev/null || true
+
+CONTRACT="$CFG_COORDINATION_CLONE/$CFG_CONTRACT_PATH"
+NEWHASH="$(git hash-object "$CFG_CONTRACT_PATH")"
+echo "synced $CFG_CONTRACT_PATH @ $REF (contract hash $NEWHASH)"
+
+# Drift report vs last sync (compares contract content via oasdiff).
+LAST="$HOME/.handoff/last_sync"
+if [ -f "$LAST" ]; then
+  PREVHASH="$(cut -d' ' -f1 "$LAST")"
+  if [ "$PREVHASH" != "$NEWHASH" ] && git cat-file -e "$PREVHASH" 2>/dev/null; then
+    git cat-file -p "$PREVHASH" > /tmp/_prev_contract
+    echo "## Contract moved since last sync ($PREVHASH -> $NEWHASH):"
+    "$DIR/contract_diff.sh" /tmp/_prev_contract "$CONTRACT" || true
+  fi
+fi
+
+case "$CFG_ROLE" in
+  frontend)
+    if command -v openapi-typescript >/dev/null 2>&1; then
+      openapi-typescript "$CONTRACT" -o "$CFG_CLIENT_TYPES_OUT"
+      echo "regenerated client types -> $CFG_CLIENT_TYPES_OUT"
+    else
+      echo "[skip] openapi-typescript not installed; run: openapi-typescript $CONTRACT -o $CFG_CLIENT_TYPES_OUT"
+    fi
+    echo "mock (dev/tests): prism mock $CONTRACT --port $CFG_MOCK_PORT"
+    ;;
+  backend)
+    echo "verify provider: schemathesis run --base-url <local-url> $CONTRACT   (or: dredd)"
+    ;;
+esac
+
+mkdir -p "$HOME/.handoff"
+echo "$NEWHASH $REF" > "$LAST"
+echo "recorded sync state -> $LAST"

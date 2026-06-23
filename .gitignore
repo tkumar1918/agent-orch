@@ -1,0 +1,12 @@
+# Local Claude Code settings (machine-specific permissions)
+.claude/
+
+# Local handoff state / generated artifacts
+.handoff/last_sync
+*.tar.gz
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

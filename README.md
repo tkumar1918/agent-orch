@@ -1,0 +1,91 @@
+# Multi-Repo Agent Handoff Orchestration
+
+Keep an isolated **frontend** team and **backend** team aligned when they can't see each
+other's repo. Each works human-in-the-loop with Claude Code on their own laptop; they
+coordinate through a neutral third **coordination repo** that holds the shared API contract
+and a structured, append-only log of handoff messages. PR review on that repo is the
+human-in-the-loop approval gate.
+
+> Full design: [docs/architecture.md](docs/architecture.md) ·
+> [docs/workflow.md](docs/workflow.md) · [docs/state-machine.md](docs/state-machine.md)
+
+## How it works (30 seconds)
+1. Backend changes the API → `/handoff-create` updates the contract on a `proposal/<id>`
+   branch, classifies breaking changes with `oasdiff`, drafts a **handoff manifest**, and
+   (after human approval) opens a PR to the coordination repo.
+2. Frontend runs `/handoff-check` → sees the handoff (even before merge), then
+   `/contract-sync --ref proposal/<id>` regenerates its typed client + Prism mock and builds
+   against the exact proposed shape — in parallel, without backend access.
+3. Both approve & merge the contract PR; status flows `proposed → … → completed`. Everything
+   is versioned and auditable.
+
+## What's in here
+| Path | Goes to | Purpose |
+|---|---|---|
+| `coordination-repo-template/` | the shared 3rd GitHub repo | contract, handoffs, ADRs, CODEOWNERS, CI |
+| `claude-skills/` | each laptop's `~/.claude/skills/` | `/handoff-create`, `/handoff-check`, `/contract-sync` |
+| `scripts/` | vendored into coordination repo `tools/` | `validate_handoff.py`, `contract_diff.sh`, `new_handoff.sh` |
+| `config/handoff.config.example.yml` | each laptop's `~/.handoff/config.yml` | role/identity/coordination-repo |
+| `mcp-server/` | optional | local MCP server exposing the workflow as typed tools |
+| `docs/` | reference | architecture, workflow, state machine |
+
+## Setup
+```bash
+# 1. Create the coordination repo from the template, vendoring the tools.
+cp -r coordination-repo-template/* /path/to/api-coordination/
+mkdir -p /path/to/api-coordination/tools
+cp scripts/* /path/to/api-coordination/tools/
+# push it; give BOTH team owners write access; protect `main` with required Code Owner review.
+
+# 2. On each laptop:
+cp -r claude-skills/* ~/.claude/skills/             # the /handoff-* skills
+mkdir -p ~/.handoff/tools && cp scripts/* ~/.handoff/tools/   # the agent-run automation
+cp config/handoff.config.example.yml ~/.handoff/config.yml
+$EDITOR ~/.handoff/config.yml     # set role (frontend|backend), identity, repo, clone path
+git clone <coordination_repo> <coordination_clone>
+```
+
+The agent does the work, you just instruct it. The skills call one-command wrappers in
+`~/.handoff/tools/`, so a session looks like:
+
+```
+You:    "hand this pagination change off to frontend"
+Agent:  edits the contract, runs contract_diff.sh (flags BREAKING), drafts the manifest,
+        runs handoff_submit.sh -> validates, branches, commits, pushes, opens the PR.
+You:    approve/merge the PR.            # the only manual step (human-in-the-loop)
+
+You:    "any handoffs for me?"
+Agent:  runs handoff_inbox.sh, summarizes, runs contract_sync.sh (regen types + drift),
+        runs handoff_status.sh <id> acknowledged.
+```
+
+Tooling the skills expect on PATH: `gh`, `oasdiff`, plus per-format consumers
+(`openapi-typescript` + `@stoplight/prism-cli` for FE; `schemathesis` or `dredd` for BE).
+Python deps for validation: `pip install jsonschema pyyaml`.
+
+## Try it locally (no second laptop)
+```bash
+# Validate the sample handoff against the schema
+python scripts/validate_handoff.py coordination-repo-template/handoffs/2026-06-24-be-001.md
+
+# Mint a new handoff from the template
+scripts/new_handoff.sh backend coordination-repo-template/handoffs
+
+# Detect a breaking contract change (needs oasdiff installed)
+scripts/contract_diff.sh old.yaml coordination-repo-template/contracts/openapi.yaml
+```
+
+## Optional: MCP server
+Prefer typed tool calls (or want this in Claude Desktop / an IDE, not just Claude Code)?
+[mcp-server/](mcp-server/) wraps the same scripts as MCP tools — `handoff_inbox`,
+`handoff_create`, `handoff_set_status`, `contract_sync`. Git stays the source of truth; the
+server is just a nicer interface. Register it with
+`claude mcp add handoff -- python3 mcp-server/server.py`. See [mcp-server/README.md](mcp-server/README.md).
+
+## Design choices
+- **Git, not a service** — both agents are Git-native; PRs give async review + audit with no
+  infra to run.
+- **Contract-driven** — coordinate around the interface, not the code.
+- **Self-contained handoffs** — embed the diff; the recipient can't open your repo.
+- **Human-in-the-loop** — agents draft, humans approve via PR review.
+- **Format-agnostic** — OpenAPI by default; swap `oasdiff` for `graphql-inspector` / `buf`.

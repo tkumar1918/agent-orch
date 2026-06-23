@@ -1,0 +1,34 @@
+name: validate-handoffs
+# Schema-validates every handoff manifest so malformed messages can never merge.
+# Runs tools/validate_handoff.py (vendored from the agent-orch scaffold's scripts/).
+
+on:
+  pull_request:
+    paths:
+      - "handoffs/**"
+  push:
+    branches: [main]
+    paths:
+      - "handoffs/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install jsonschema pyyaml
+
+      - name: Validate all handoff manifests
+        run: |
+          shopt -s nullglob
+          files=(handoffs/[!_]*.md)   # skip _template.md and other _-prefixed files
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No handoff manifests to validate."; exit 0
+          fi
+          python tools/validate_handoff.py "${files[@]}"

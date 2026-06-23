@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  description: |
+    Shared API contract between the frontend and backend teams.
+    This file is the SINGLE SOURCE OF TRUTH for the HTTP interface.
+    Changes ride a `proposal/<handoff-id>` branch + PR and merge to `main` only
+    after both teams approve (see CODEOWNERS).
+  version: 2.0.0
+servers:
+  - url: https://api.example.com
+    description: Production
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders (paginated)
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: A page of orders.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      summary: Get a single order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found.
+components:
+  schemas:
+    OrderPage:
+      type: object
+      required: [data, page, total]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Order" }
+        page: { type: integer, example: 1 }
+        total: { type: integer, example: 137 }
+    Order:
+      type: object
+      required: [id, status, total_cents, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [pending, paid, shipped, cancelled]
+        total_cents: { type: integer }
+        created_at: { type: string, format: date-time }

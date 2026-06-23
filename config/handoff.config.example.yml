@@ -1,0 +1,17 @@
+# Per-laptop handoff config. Copy to ~/.handoff/config.yml on each machine.
+# The skills read this to know which side they are on and where the coordination repo is.
+
+role: frontend                  # frontend | backend  (Laptop-1 = frontend, Laptop-2 = backend)
+identity: alice                 # the human approving handoffs from this machine
+
+# The neutral third repo both teams can access. The ONLY shared surface.
+coordination_repo: git@github.com:acme/api-coordination.git
+coordination_clone: ~/work/api-coordination   # local clone the skills operate in
+
+# Path to the contract within the coordination repo, and how to consume it.
+contract_path: contracts/openapi.yaml
+contract_format: openapi        # openapi | graphql | grpc
+
+# Frontend-only: where generated client types and the mock live.
+client_types_out: src/api/types.ts
+mock_port: 4010

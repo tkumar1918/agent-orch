@@ -1,0 +1,17 @@
+# Review gates for the coordination repo.
+# A change is the human-in-the-loop handoff approval, enforced by GitHub branch protection
+# (require review from Code Owners on the protected `main` branch).
+
+# Contract changes are a cross-team commitment: BOTH teams must approve.
+/contracts/        @acme/frontend-team @acme/backend-team
+
+# Cross-team decisions: both teams sign off.
+/decisions/        @acme/frontend-team @acme/backend-team
+
+# Handoff messages + status transitions: both teams can see and approve.
+# (The recipient acknowledging is a real human action recorded in PR review.)
+/handoffs/         @acme/frontend-team @acme/backend-team
+
+# Schema / CI / tooling: platform owners.
+/handoffs/_schema/ @acme/platform-team
+/.github/          @acme/platform-team
