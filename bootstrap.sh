@@ -30,9 +30,18 @@ done
 command -v gh  >/dev/null || { echo "gh not found (https://cli.github.com)"  >&2; exit 2; }
 command -v git >/dev/null || { echo "git not found" >&2; exit 2; }
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo /nonexistent)"
+CLEANUP=()
+# Run straight from the GitHub link (single-file download / curl|bash): if the scaffold
+# isn't next to us, fetch it with gh. Override the source with SCAFFOLD_REPO=owner/repo.
+if [ ! -d "$HERE/coordination-repo-template" ]; then
+  SCAFFOLD_REPO="${SCAFFOLD_REPO:-tkumar1918/agent-orch}"
+  echo "no local scaffold — fetching $SCAFFOLD_REPO via gh ..."
+  HERE="$(mktemp -d)"; CLEANUP+=("$HERE")
+  gh repo clone "$SCAFFOLD_REPO" "$HERE" -- --depth 1 -q
+fi
+WORK="$(mktemp -d)"; CLEANUP+=("$WORK")
+trap 'rm -rf "${CLEANUP[@]}"' EXIT
 
 # Seed the repo: template + vendored tools/.
 cp -r "$HERE/coordination-repo-template/." "$WORK/"

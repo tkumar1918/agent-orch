@@ -27,6 +27,8 @@ separate repo per project instead.)
 ## What's in here
 | Path | Goes to | Purpose |
 |---|---|---|
+| `bootstrap.sh` | run once, by an admin | create + seed the coordination repo on GitHub and add both devs as collaborators |
+| `enroll.sh` | run once, per laptop | clone the coordination repo + install skills/tools + write `~/.handoff/config.yml` |
 | `coordination-repo-template/` | the shared 3rd GitHub repo | shared `_schema`/`_template`, per-project `projects/<project>/{contracts,handoffs,decisions}`, CODEOWNERS, CI |
 | `claude-skills/` | each laptop's `~/.claude/skills/` | `/handoff-create`, `/handoff-check`, `/contract-sync` |
 | `scripts/` | vendored into coordination repo `tools/` | `validate_handoff.py`, `contract_diff.sh`, `new_handoff.sh`, agent wrappers |
@@ -42,13 +44,21 @@ mkdir -p /path/to/api-coordination/tools
 cp scripts/* /path/to/api-coordination/tools/
 # push it; give BOTH team owners write access; protect `main` with required Code Owner review.
 
-# 2. On each laptop:
+# 2. On each laptop — one command does clone + skills + tools + config.yml:
+./enroll.sh --repo acme/web-app-coordination --role frontend --identity alice --project web-app
+# backend laptop: --role backend --identity bob   (same --repo and --project)
+```
+
+<details><summary>…or the same thing by hand</summary>
+
+```bash
 cp -r claude-skills/* ~/.claude/skills/             # the /handoff-* skills
 mkdir -p ~/.handoff/tools && cp scripts/* ~/.handoff/tools/   # the agent-run automation
 cp config/handoff.config.example.yml ~/.handoff/config.yml
 $EDITOR ~/.handoff/config.yml     # set role, identity, repo, clone path, and project
 git clone <coordination_repo> <coordination_clone>
 ```
+</details>
 
 **One command per coordination repo** — [bootstrap.sh](bootstrap.sh) creates the repo from the
 template (vendoring `tools/`) and adds both devs as collaborators. This is the natural fit when
@@ -57,6 +67,15 @@ frontend/backend pair its own coordination repo with exactly those two devs.
 ```bash
 ./bootstrap.sh acme/web-app-coordination --private \
     --project web-app --collab alice-fe --collab bob-be
+```
+No clone needed — run it (and `enroll.sh`) straight from GitHub; the script fetches the rest of
+the scaffold itself (needs `gh` authenticated):
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/tkumar1918/agent-orch/main/bootstrap.sh) \
+    acme/web-app-coordination --private --project web-app --collab alice-fe --collab bob-be
+
+bash <(curl -fsSL https://raw.githubusercontent.com/tkumar1918/agent-orch/main/enroll.sh) \
+    --repo acme/web-app-coordination --role frontend --identity alice --project web-app
 ```
 
 **Add another project later** — no new repo, just a folder in the existing coordination repo
