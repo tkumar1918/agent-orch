@@ -50,6 +50,15 @@ $EDITOR ~/.handoff/config.yml     # set role, identity, repo, clone path, and pr
 git clone <coordination_repo> <coordination_clone>
 ```
 
+**One command per coordination repo** — [bootstrap.sh](bootstrap.sh) creates the repo from the
+template (vendoring `tools/`) and adds both devs as collaborators. This is the natural fit when
+your org provisions access per-repo (each dev is a collaborator scoped to one repo): give each
+frontend/backend pair its own coordination repo with exactly those two devs.
+```bash
+./bootstrap.sh acme/web-app-coordination --private \
+    --project web-app --collab alice-fe --collab bob-be
+```
+
 **Add another project later** — no new repo, just a folder in the existing coordination repo
 (`_schema` + `_template.md` are shared at the repo root; nothing to copy per project):
 ```bash
