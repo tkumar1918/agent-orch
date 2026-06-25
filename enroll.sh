@@ -1,26 +1,25 @@
 #!/usr/bin/env bash
-# Enroll THIS laptop into a coordination repo: clone it, install the skills + tools,
-# and write ~/.handoff/config.yml. Run ONCE per laptop (re-run with --force to refresh).
-# Needs: git + gh (authenticated). Does not need admin on the repo — just collaborator access.
+# Enroll a PROJECT into a coordination repo: clone the repo (if needed), install the skills +
+# tools, and write a project-local ./.handoff/config.yml in the CURRENT folder. Config is always
+# project-local — run this once inside each project folder you work on (re-run with --force to
+# refresh). One laptop serves many projects: the agent picks up the config of whatever folder it
+# runs in. Needs: git + gh (authenticated). Just collaborator access on the repo, not admin.
 #
-#   ./enroll.sh --repo <owner/repo> --role <frontend|backend> --identity <name> --project <name> [options]
+#   cd <your-project>/ && ./enroll.sh --repo <owner/repo> --role <frontend|backend> --identity <name> --project <name> [options]
 #     --clone <dir>          where to clone the coordination repo (default: ~/work/<repo-name>)
 #     --contract-path <p>    contract path within the project (default: contracts/openapi.yaml)
-#     --force                overwrite an existing config
-#     --local                write ./.handoff/config.yml in the current folder instead of the
-#                            global ~/.handoff one, so one laptop can serve many projects
-#                            (the agent picks up the config of whatever project folder it runs in)
+#     --force                overwrite this folder's existing .handoff/config.yml
 #
-# Example — frontend dev Alice enrolling into the shared repo for project web-app:
-#   ./enroll.sh --repo acme/agent-handoff --role frontend --identity alice --project web-app
+# Example — frontend dev Alice, in her web-app frontend folder:
+#   cd ~/work/web-app-ui && ./enroll.sh --repo acme/agent-handoff --role frontend --identity alice --project web-app
 #
-# Two frontend projects on one laptop — run --local inside each project folder:
-#   cd ~/work/shop-web  && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project shop  --local
-#   cd ~/work/admin-web && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project admin --local
+# Two frontend projects on one laptop — run it inside each project folder:
+#   cd ~/work/shop-web  && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project shop
+#   cd ~/work/admin-web && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project admin
 set -euo pipefail
 
-REPO=""; ROLE=""; IDENTITY=""; PROJECT=""; CLONE=""; CONTRACT_PATH="contracts/openapi.yaml"; FORCE=0; LOCAL=0
-while [ $# -gt 0 ]; do
+REPO=""; ROLE=""; IDENTITY=""; PROJECT=""; CLONE=""; CONTRACT_PATH="contracts/openapi.yaml"; FORCE=0
+while [ $# -gt 0 ]; do ?
   case "$1" in
     --repo)          REPO="${2:?--repo needs <owner/repo>}"; shift ;;
     --role)          ROLE="${2:?--role needs frontend|backend}"; shift ;;
@@ -29,7 +28,6 @@ while [ $# -gt 0 ]; do
     --clone)         CLONE="${2:?--clone needs a dir}"; shift ;;
     --contract-path) CONTRACT_PATH="${2:?--contract-path needs a path}"; shift ;;
     --force)         FORCE=1 ;;
-    --local)         LOCAL=1 ;;   # write ./.handoff/config.yml here (per-project) instead of the global ~/.handoff one
     -*) echo "unknown option: $1" >&2; exit 2 ;;
     *)  echo "unexpected argument: $1" >&2; exit 2 ;;
   esac
@@ -57,9 +55,9 @@ CLONE="${CLONE:-$HOME/work/$REPO_NAME}"
 CLONE="${CLONE/#\~/$HOME}"
 SKILLS_DIR="$HOME/.claude/skills"
 TOOLS_DIR="$HOME/.handoff/tools"
-# --local: per-project config in the current folder (picked up when the agent runs here).
-# Otherwise the global config, which serves one project at a time.
-if [ "$LOCAL" = 1 ]; then CONFIG="$PWD/.handoff/config.yml"; else CONFIG="$HOME/.handoff/config.yml"; fi
+# Config is ALWAYS project-local: written into this project's .handoff/ and picked up when the
+# agent runs here. (Skills + tools stay shared/global — they're identical for every project.)
+CONFIG="$PWD/.handoff/config.yml"
 
 # 1. Clone the coordination repo (skip if it's already there).
 if [ -d "$CLONE/.git" ]; then
@@ -102,7 +100,7 @@ client_types_out: src/api/types.ts
 mock_port: 4010
 EOF
   echo "wrote config     -> $CONFIG"
-  [ "$LOCAL" = 1 ] && echo "  (project-local — add .handoff/ to this repo's .gitignore)"
+  echo "  (project-local — add .handoff/ to this repo's .gitignore)"
 fi
 
 # 5. Dependency check (warn-only; the skills need these at runtime).

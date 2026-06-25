@@ -28,11 +28,11 @@ separate repo per project instead.)
 | Path | Goes to | Purpose |
 |---|---|---|
 | `bootstrap.sh` | run once, by an admin | create + seed the coordination repo on GitHub and add both devs as collaborators |
-| `enroll.sh` | run once, per laptop | clone the coordination repo + install skills/tools + write `~/.handoff/config.yml` |
+| `enroll.sh` | run once, per project folder | clone the coordination repo + install skills/tools + write a project-local `.handoff/config.yml` |
 | `coordination-repo-template/` | the shared 3rd GitHub repo | shared `_schema`/`_template`, per-project `projects/<project>/{contracts,handoffs,decisions}`, CODEOWNERS, CI |
 | `claude-skills/` | each laptop's `~/.claude/skills/` | `/handoff-create`, `/handoff-check`, `/contract-sync` |
 | `scripts/` | vendored into coordination repo `tools/` | `validate_handoff.py`, `contract_diff.sh`, `new_handoff.sh`, agent wrappers |
-| `config/handoff.config.example.yml` | each laptop's `~/.handoff/config.yml` | role/identity/repo/**project** |
+| `config/handoff.config.example.yml` | each project's `.handoff/config.yml` | role/identity/repo/**project** |
 | `mcp-server/` | optional | local MCP server exposing the workflow as typed tools |
 | `docs/` | reference | architecture, workflow, state machine |
 
@@ -44,28 +44,30 @@ mkdir -p /path/to/api-coordination/tools
 cp scripts/* /path/to/api-coordination/tools/
 # push it; give BOTH team owners write access; protect `main` with required Code Owner review.
 
-# 2. On each laptop — one command does clone + skills + tools + config.yml:
-./enroll.sh --repo acme/web-app-coordination --role frontend --identity alice --project web-app
-# backend laptop: --role backend --identity bob   (same --repo and --project)
+# 2. Per project — run it INSIDE the project folder (clone + skills + tools + project-local config):
+cd ~/work/web-app-ui && ./enroll.sh --repo acme/web-app-coordination --role frontend --identity alice --project web-app
+# backend: cd into the backend folder, --role backend --identity bob   (same --repo and --project)
 ```
 
-**Several projects on one laptop?** Add `--local` and run it from inside each project folder —
-it writes a per-project `./.handoff/config.yml` instead of the single global one. The agent uses
-the config of whatever folder it's running in (walks up to find the nearest `.handoff/config.yml`,
-falling back to `~/.handoff/config.yml`):
+Config is **project-local**: `enroll.sh` writes `./.handoff/config.yml` into the folder you run it
+in, and the agent uses the config of whatever folder it's running in (it walks up to find the
+nearest `.handoff/config.yml`). There is no global config — so **one laptop serves many projects**
+with zero ambiguity; just run `enroll.sh` once inside each project folder:
 ```bash
-cd ~/work/shop-web  && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project shop  --local
-cd ~/work/admin-web && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project admin --local
+cd ~/work/shop-web  && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project shop
+cd ~/work/admin-web && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project admin
 ```
+Skills (`~/.claude/skills/`) and tools (`~/.handoff/tools/`) stay shared — identical code for every
+project, like an installed CLI. Add `.handoff/` to each project's `.gitignore`.
 
 <details><summary>…or the same thing by hand</summary>
 
 ```bash
-cp -r claude-skills/* ~/.claude/skills/             # the /handoff-* skills
-mkdir -p ~/.handoff/tools && cp scripts/* ~/.handoff/tools/   # the agent-run automation
-cp config/handoff.config.example.yml ~/.handoff/config.yml
-$EDITOR ~/.handoff/config.yml     # set role, identity, repo, clone path, and project
+cp -r claude-skills/* ~/.claude/skills/             # the /handoff-* skills (shared)
+mkdir -p ~/.handoff/tools && cp scripts/* ~/.handoff/tools/   # the agent-run automation (shared)
 git clone <coordination_repo> <coordination_clone>
+mkdir -p .handoff && cp config/handoff.config.example.yml .handoff/config.yml   # in EACH project folder
+$EDITOR .handoff/config.yml     # set role, identity, repo, clone path, and project
 ```
 </details>
 
@@ -92,7 +94,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tkumar1918/agent-orch/main/e
 ```bash
 mkdir -p projects/<project>/{contracts,handoffs,decisions}
 # add the first contract, add a CODEOWNERS block for projects/<project>/, commit, push.
-# Each laptop working it sets `project: <project>` in ~/.handoff/config.yml.
+# Each project folder working it sets `project: <project>` in its .handoff/config.yml.
 ```
 
 The agent does the work, you just instruct it. The skills call one-command wrappers in

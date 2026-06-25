@@ -1,5 +1,6 @@
-# Per-laptop handoff config. Copy to ~/.handoff/config.yml on each machine.
-# The skills read this to know which side they are on and where the coordination repo is.
+# Project-local handoff config. Lives at <project>/.handoff/config.yml (enroll.sh writes it).
+# The skills read the nearest .handoff/config.yml walking up from the cwd — so the agent uses
+# the config of whatever project folder it runs in. There is no global config.
 
 role: frontend                  # frontend | backend  (Laptop-1 = frontend, Laptop-2 = backend)
 identity: alice                 # the human approving handoffs from this machine

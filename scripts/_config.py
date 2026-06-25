@@ -16,9 +16,9 @@ except ImportError:
     sys.exit(1)
 
 def find_config() -> str:
-    """$HANDOFF_CONFIG wins; else the nearest project-local .handoff/config.yml walking
-    up from the cwd; else the global ~/.handoff/config.yml. Project-local lets one laptop
-    serve many projects — run the agent inside a project and it picks up that config."""
+    """Config is ALWAYS project-local: the nearest .handoff/config.yml walking up from the
+    cwd. ($HANDOFF_CONFIG overrides it, for tests.) No global config — run the agent inside a
+    project and it picks up that project's config; nowhere else to look, nothing to confuse."""
     env = os.environ.get("HANDOFF_CONFIG")
     if env:
         return os.path.expanduser(env)
@@ -29,17 +29,15 @@ def find_config() -> str:
             return cand
         parent = os.path.dirname(d)
         if parent == d:
-            break
+            return ""
         d = parent
-    return os.path.expanduser("~/.handoff/config.yml")
 
 
 path = find_config()
-if not os.path.isfile(path):
+if not path or not os.path.isfile(path):
     sys.stderr.write(
-        f"missing config: {path}\n"
-        "  run enroll.sh (use --local inside a project for a project-scoped config),\n"
-        "  or copy config/handoff.config.example.yml to ~/.handoff/config.yml\n"
+        f"no .handoff/config.yml found walking up from {os.getcwd()}\n"
+        "  run enroll.sh inside your project folder to create one.\n"
     )
     sys.exit(1)
 
