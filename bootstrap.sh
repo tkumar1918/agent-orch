@@ -7,13 +7,14 @@
 #     --project <name>          rename the seed project folder (default: example-app)
 #     --collab <github-user>    add as a push collaborator on the new repo (repeatable)
 #     --no-sample               drop the example handoff (keep an empty handoffs/ skeleton)
+#     --existing                repo is already created (org-provisioned): seed it, don't create it
 #
 # Example — a coordination repo for one frontend/backend pair, both devs added:
 #   ./bootstrap.sh acme/web-app-coordination --private \
 #       --project web-app --collab alice-fe --collab bob-be
 set -euo pipefail
 
-REPO=""; VIS="--private"; PROJECT=""; NO_SAMPLE=0; COLLABS=()
+REPO=""; VIS="--private"; PROJECT=""; NO_SAMPLE=0; EXISTING=0; COLLABS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --private) VIS="--private" ;;
@@ -21,12 +22,13 @@ while [ $# -gt 0 ]; do
     --project) PROJECT="${2:?--project needs a name}"; shift ;;
     --collab)  COLLABS+=("${2:?--collab needs a user}"); shift ;;
     --no-sample) NO_SAMPLE=1 ;;
+    --existing)  EXISTING=1 ;;   # repo already created (e.g. provisioned by your org): seed it, don't create
     -*) echo "unknown option: $1" >&2; exit 2 ;;
     *)  REPO="$1" ;;
   esac
   shift
 done
-[ -n "$REPO" ] || { echo "usage: bootstrap.sh <owner/repo> [--private|--public] [--project name] [--collab user]..." >&2; exit 2; }
+[ -n "$REPO" ] || { echo "usage: bootstrap.sh <owner/repo> [--private|--public|--existing] [--project name] [--collab user]..." >&2; exit 2; }
 command -v gh  >/dev/null || { echo "gh not found (https://cli.github.com)"  >&2; exit 2; }
 command -v git >/dev/null || { echo "git not found" >&2; exit 2; }
 
@@ -62,7 +64,15 @@ cd "$WORK"
 git init -q -b main
 git add -A
 git commit -q -m "Bootstrap coordination repo from template (project: $PROJ)"
-gh repo create "$REPO" $VIS --source=. --remote=origin --push
+if [ "$EXISTING" = 1 ]; then
+  # Repo already exists (your org provisioned it). Push the seed into it; don't create.
+  proto="$(gh config get -h github.com git_protocol 2>/dev/null || echo https)"
+  if [ "$proto" = ssh ]; then origin="git@github.com:$REPO.git"; else origin="https://github.com/$REPO.git"; fi
+  git remote add origin "$origin"
+  git push -u origin main
+else
+  gh repo create "$REPO" $VIS --source=. --remote=origin --push
+fi
 
 # Add collaborators (push access) so each repo-scoped dev can read/write the neutral repo.
 for u in ${COLLABS[@]+"${COLLABS[@]}"}; do
