@@ -31,6 +31,7 @@ def emit(var: str, key: str, default: str = "") -> None:
 
 
 emit("CFG_ROLE", "role")
+emit("CFG_PROJECT", "project")
 emit("CFG_IDENTITY", "identity")
 emit("CFG_COORDINATION_REPO", "coordination_repo")
 emit("CFG_COORDINATION_CLONE", "coordination_clone")

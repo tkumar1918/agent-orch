@@ -14,17 +14,24 @@ through a neutral third Git repository.
 ## The three pillars
 
 ### 1. Coordination repo (the neutral ground / message bus)
-A third GitHub repo both owners can access — the only shared surface.
+A third GitHub repo both owners can access — the only shared surface. **One repo serves many
+projects**; each lives under `projects/<project>/`.
 
 ```
 api-coordination/
-├── contracts/openapi.yaml      # SINGLE SOURCE OF TRUTH for the interface
-├── handoffs/*.md               # append-only log of structured handoff messages
-├── decisions/*.md              # cross-team ADRs
-├── tools/                      # vendored validate_handoff.py / contract_diff.sh
-├── CODEOWNERS                  # contract changes need BOTH teams' approval
-└── .github/workflows/          # schema validation + oasdiff breaking-change gate
+├── _schema/handoff.schema.json   # shared manifest schema (all projects)
+├── _template.md                  # shared blank manifest
+├── projects/
+│   └── <project>/
+│       ├── contracts/openapi.yaml  # SINGLE SOURCE OF TRUTH for this project's interface
+│       ├── handoffs/*.md           # append-only log of handoff messages
+│       └── decisions/*.md          # cross-team ADRs
+├── tools/                        # vendored validate_handoff.py / contract_diff.sh / wrappers
+├── CODEOWNERS                    # per-project: contract changes need BOTH teams' approval
+└── .github/workflows/            # schema validation + oasdiff breaking-change gate
 ```
+
+Add a project = add a `projects/<project>/` folder + a CODEOWNERS block. No new repo.
 
 Why Git? Both agents are already Git-native; it is versioned, diffable, auditable, async
 across timezones, and the **PR review is the human-in-the-loop approval gate** — no new
@@ -33,7 +40,7 @@ service to run.
 ### 2. Handoff Manifest (the structured message)
 Markdown + YAML frontmatter: agent-parseable and human-readable. Self-contained (embeds the
 oasdiff changelog) because the recipient usually cannot open the producer's source PR.
-Validated by `handoffs/_schema/handoff.schema.json`. See [state-machine.md](state-machine.md).
+Validated by the shared `_schema/handoff.schema.json`. See [state-machine.md](state-machine.md).
 
 ### 3. Claude Code skills (the agent interface)
 `/handoff-create`, `/handoff-check`, `/contract-sync` — each laptop drives the coordination

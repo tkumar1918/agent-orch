@@ -1,5 +1,5 @@
 ---
-handoff_id: YYYY-MM-DD-<from>-NNN        # mint with scripts/new_handoff.sh
+handoff_id: YYYY-MM-DD-<side>-NNN-<rand>  # mint with scripts/new_handoff.sh
 from: backend                            # producer: frontend | backend
 to: frontend                             # consumer: frontend | backend
 created_by: <human name> (human-approved via Claude Code)

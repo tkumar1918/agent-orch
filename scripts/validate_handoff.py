@@ -20,17 +20,23 @@ except ImportError:
 
 
 def find_schema(manifest: Path) -> Path:
-    """Schema lives at <handoffs>/_schema/handoff.schema.json, next to manifests."""
-    candidates = [
-        manifest.parent / "_schema" / "handoff.schema.json",
-        manifest.parent.parent / "handoffs" / "_schema" / "handoff.schema.json",
+    """Schema is shared at <coordination-repo-root>/_schema/handoff.schema.json. Walk up
+    from the manifest (manifests live at projects/<project>/handoffs/<id>.md)."""
+    d = manifest.resolve().parent
+    while True:
+        cand = d / "_schema" / "handoff.schema.json"
+        if cand.is_file():
+            return cand
+        if d.parent == d:
+            break
+        d = d.parent
+    fallback = (
         Path(__file__).resolve().parent.parent
-        / "coordination-repo-template/handoffs/_schema/handoff.schema.json",
-    ]
-    for c in candidates:
-        if c.is_file():
-            return c
-    sys.exit(f"Could not locate handoff.schema.json near {manifest}")
+        / "coordination-repo-template/_schema/handoff.schema.json"
+    )
+    if fallback.is_file():
+        return fallback
+    sys.exit(f"Could not locate _schema/handoff.schema.json above {manifest}")
 
 
 def _normalize(value):

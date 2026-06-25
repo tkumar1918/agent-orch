@@ -6,26 +6,31 @@ coordinate through a neutral third **coordination repo** that holds the shared A
 and a structured, append-only log of handoff messages. PR review on that repo is the
 human-in-the-loop approval gate.
 
+**One coordination repo serves many projects** — each lives under `projects/<project>/`, so
+you set it up once and add a project by adding a folder. (This assumes the projects share a
+trust domain; everyone with repo access sees every project. For untrusted teams, use a
+separate repo per project instead.)
+
 > Full design: [docs/architecture.md](docs/architecture.md) ·
 > [docs/workflow.md](docs/workflow.md) · [docs/state-machine.md](docs/state-machine.md)
 
 ## How it works (30 seconds)
-1. Backend changes the API → `/handoff-create` updates the contract on a `proposal/<id>`
-   branch, classifies breaking changes with `oasdiff`, drafts a **handoff manifest**, and
-   (after human approval) opens a PR to the coordination repo.
+1. Backend changes the API → `/handoff-create` updates the project's contract on a
+   `proposal/<project>/<id>` branch, classifies breaking changes with `oasdiff`, drafts a
+   **handoff manifest**, and (after human approval) opens a PR to the coordination repo.
 2. Frontend runs `/handoff-check` → sees the handoff (even before merge), then
-   `/contract-sync --ref proposal/<id>` regenerates its typed client + Prism mock and builds
-   against the exact proposed shape — in parallel, without backend access.
+   `/contract-sync --ref proposal/<project>/<id>` regenerates its typed client + Prism mock and
+   builds against the exact proposed shape — in parallel, without backend access.
 3. Both approve & merge the contract PR; status flows `proposed → … → completed`. Everything
    is versioned and auditable.
 
 ## What's in here
 | Path | Goes to | Purpose |
 |---|---|---|
-| `coordination-repo-template/` | the shared 3rd GitHub repo | contract, handoffs, ADRs, CODEOWNERS, CI |
+| `coordination-repo-template/` | the shared 3rd GitHub repo | shared `_schema`/`_template`, per-project `projects/<project>/{contracts,handoffs,decisions}`, CODEOWNERS, CI |
 | `claude-skills/` | each laptop's `~/.claude/skills/` | `/handoff-create`, `/handoff-check`, `/contract-sync` |
-| `scripts/` | vendored into coordination repo `tools/` | `validate_handoff.py`, `contract_diff.sh`, `new_handoff.sh` |
-| `config/handoff.config.example.yml` | each laptop's `~/.handoff/config.yml` | role/identity/coordination-repo |
+| `scripts/` | vendored into coordination repo `tools/` | `validate_handoff.py`, `contract_diff.sh`, `new_handoff.sh`, agent wrappers |
+| `config/handoff.config.example.yml` | each laptop's `~/.handoff/config.yml` | role/identity/repo/**project** |
 | `mcp-server/` | optional | local MCP server exposing the workflow as typed tools |
 | `docs/` | reference | architecture, workflow, state machine |
 
@@ -41,8 +46,16 @@ cp scripts/* /path/to/api-coordination/tools/
 cp -r claude-skills/* ~/.claude/skills/             # the /handoff-* skills
 mkdir -p ~/.handoff/tools && cp scripts/* ~/.handoff/tools/   # the agent-run automation
 cp config/handoff.config.example.yml ~/.handoff/config.yml
-$EDITOR ~/.handoff/config.yml     # set role (frontend|backend), identity, repo, clone path
+$EDITOR ~/.handoff/config.yml     # set role, identity, repo, clone path, and project
 git clone <coordination_repo> <coordination_clone>
+```
+
+**Add another project later** — no new repo, just a folder in the existing coordination repo
+(`_schema` + `_template.md` are shared at the repo root; nothing to copy per project):
+```bash
+mkdir -p projects/<project>/{contracts,handoffs,decisions}
+# add the first contract, add a CODEOWNERS block for projects/<project>/, commit, push.
+# Each laptop working it sets `project: <project>` in ~/.handoff/config.yml.
 ```
 
 The agent does the work, you just instruct it. The skills call one-command wrappers in
@@ -65,14 +78,16 @@ Python deps for validation: `pip install jsonschema pyyaml`.
 
 ## Try it locally (no second laptop)
 ```bash
-# Validate the sample handoff against the schema
-python scripts/validate_handoff.py coordination-repo-template/handoffs/2026-06-24-be-001.md
+P=coordination-repo-template/projects/example-app
 
-# Mint a new handoff from the template
-scripts/new_handoff.sh backend coordination-repo-template/handoffs
+# Validate the sample handoff against the shared schema
+python scripts/validate_handoff.py "$P/handoffs/2026-06-24-be-001-a1b2.md"
+
+# Mint a new handoff from the shared template into a project
+scripts/new_handoff.sh backend "$P/handoffs"
 
 # Detect a breaking contract change (needs oasdiff installed)
-scripts/contract_diff.sh old.yaml coordination-repo-template/contracts/openapi.yaml
+scripts/contract_diff.sh old.yaml "$P/contracts/openapi.yaml"
 ```
 
 ## Optional: MCP server

@@ -25,10 +25,10 @@ import yaml
 
 # FastMCP is optional at import time so the tool logic stays unit-testable without the SDK.
 try:
-    from mcp.server.fastmcp import FastMCP
+    from mcp.server.fastmcp import FastMCP # pyright: ignore[reportMissingImports]
 
     _mcp: "FastMCP | None" = FastMCP("handoff")
-    tool = _mcp.tool
+    tool = _mcp.tool # pyright: ignore[reportOptionalMemberAccess]
 except ImportError:  # pragma: no cover - exercised only when mcp isn't installed
     _mcp = None
 
@@ -117,7 +117,10 @@ def handoff_create(
     """
     cfg = _config()
     clone = Path(cfg["coordination_clone"])
-    contract_rel = cfg["contract_path"]
+    project = cfg.get("project") or ""
+    if not project:
+        return "set 'project:' in ~/.handoff/config.yml"
+    contract_rel = f"projects/{project}/{cfg['contract_path']}"  # repo-relative
     contract_abs = clone / contract_rel
     role = cfg.get("role", "")
     to = to or ("frontend" if role == "backend" else "backend")
@@ -127,6 +130,7 @@ def handoff_create(
         return f"coordination clone not found: {clone}"
 
     if contract_yaml:
+        contract_abs.parent.mkdir(parents=True, exist_ok=True)
         contract_abs.write_text(contract_yaml, encoding="utf-8")
 
     # Old contract = the version on main; new = working tree (just edited).
@@ -155,7 +159,8 @@ def handoff_create(
     severity = severity or ("high" if breaking else "low")
 
     # Mint a unique id (new_handoff.sh prints the path it created).
-    minted = _run(["bash", str(TOOLS / "new_handoff.sh"), role, str(clone / "handoffs")])
+    handoffs_dir = clone / "projects" / project / "handoffs"
+    minted = _run(["bash", str(TOOLS / "new_handoff.sh"), role, str(handoffs_dir)])
     manifest_path = Path(minted.splitlines()[-1].strip())
     hid = manifest_path.stem
 
@@ -166,7 +171,7 @@ def handoff_create(
         "created_by": f"{identity} (via MCP/agent)",
         "status": "proposed",
         "contract_status": "proposed",
-        "contract_branch": f"proposal/{hid}",
+        "contract_branch": f"proposal/{project}/{hid}",
         "contract_version": "pending",  # handoff_submit.sh pins the real hash before validate
         "breaking": bool(breaking),
         "severity": severity,

@@ -7,20 +7,22 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 eval "$(python3 "$DIR/_config.py")" || exit 1
+: "${CFG_PROJECT:?set 'project:' in ~/.handoff/config.yml}"
 
 ID="${1:?usage: handoff_status.sh <id> <status>}"
 STATUS="${2:?status required}"
 cd "$CFG_COORDINATION_CLONE"
+P="projects/$CFG_PROJECT"
 git fetch -q origin 2>/dev/null || true
 git checkout -q main 2>/dev/null || true
 git pull -q 2>/dev/null || true
 
-BRANCH="status/$ID-$STATUS"
+BRANCH="status/$CFG_PROJECT/$ID-$STATUS"
 git checkout -q -b "$BRANCH" 2>/dev/null || git checkout -q "$BRANCH"
-python3 "$DIR/_set_field.py" "handoffs/$ID.md" status "$STATUS"
-python3 "$DIR/validate_handoff.py" "handoffs/$ID.md"
-git add "handoffs/$ID.md"
-git commit -q -m "$ID: status -> $STATUS"
+python3 "$DIR/_set_field.py" "$P/handoffs/$ID.md" status "$STATUS"
+python3 "$DIR/validate_handoff.py" "$P/handoffs/$ID.md"
+git add "$P/handoffs/$ID.md"
+git commit -q -m "[$CFG_PROJECT] $ID: status -> $STATUS"
 
 if [ "${DRY_RUN:-0}" = "1" ]; then
   echo "[dry-run] set $ID status -> $STATUS on $BRANCH; would push + open PR"

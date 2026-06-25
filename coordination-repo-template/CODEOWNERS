@@ -1,17 +1,21 @@
-# Review gates for the coordination repo.
-# A change is the human-in-the-loop handoff approval, enforced by GitHub branch protection
+# Review gates for the shared coordination repo (one repo, many projects).
+# A merge is the human-in-the-loop handoff approval, enforced by branch protection
 # (require review from Code Owners on the protected `main` branch).
+#
+# Scope review PER PROJECT: each project's teams own their own folder. Contract changes
+# are a cross-team commitment, so list BOTH teams for that project. Copy this block per
+# project you add.
 
-# Contract changes are a cross-team commitment: BOTH teams must approve.
-/contracts/        @acme/frontend-team @acme/backend-team
+/projects/example-app/contracts/   @acme/example-fe @acme/example-be
+/projects/example-app/decisions/   @acme/example-fe @acme/example-be
+/projects/example-app/handoffs/    @acme/example-fe @acme/example-be
 
-# Cross-team decisions: both teams sign off.
-/decisions/        @acme/frontend-team @acme/backend-team
+# Add the next project the same way:
+# /projects/<project>/contracts/   @acme/<project>-fe @acme/<project>-be
+# /projects/<project>/handoffs/    @acme/<project>-fe @acme/<project>-be
 
-# Handoff messages + status transitions: both teams can see and approve.
-# (The recipient acknowledging is a real human action recorded in PR review.)
-/handoffs/         @acme/frontend-team @acme/backend-team
-
-# Schema / CI / tooling: platform owners.
-/handoffs/_schema/ @acme/platform-team
-/.github/          @acme/platform-team
+# Shared schema / tooling / CI: platform owners.
+/_schema/      @acme/platform-team
+/_template.md  @acme/platform-team
+/tools/        @acme/platform-team
+/.github/      @acme/platform-team

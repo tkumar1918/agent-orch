@@ -5,10 +5,12 @@ role: frontend                  # frontend | backend  (Laptop-1 = frontend, Lapt
 identity: alice                 # the human approving handoffs from this machine
 
 # The neutral third repo both teams can access. The ONLY shared surface.
+# ONE repo serves many projects — each lives under projects/<project>/.
 coordination_repo: git@github.com:acme/api-coordination.git
 coordination_clone: ~/work/api-coordination   # local clone the skills operate in
+project: example-app            # which projects/<project>/ this laptop works on
 
-# Path to the contract within the coordination repo, and how to consume it.
+# Path to the contract WITHIN the project dir (projects/<project>/<contract_path>).
 contract_path: contracts/openapi.yaml
 contract_format: openapi        # openapi | graphql | grpc
 

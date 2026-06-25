@@ -7,28 +7,31 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 eval "$(python3 "$DIR/_config.py")" || exit 1
+: "${CFG_PROJECT:?set 'project:' in ~/.handoff/config.yml}"
 
 MANIFEST="${1:?usage: handoff_submit.sh <handoffs/<id>.md>}"
 cd "$CFG_COORDINATION_CLONE"
+P="projects/$CFG_PROJECT"
 ID="$(basename "$MANIFEST" .md)"
-BRANCH="proposal/$ID"
+BRANCH="proposal/$CFG_PROJECT/$ID"
 
 git checkout -q -b "$BRANCH" 2>/dev/null || git checkout -q "$BRANCH"
 
 # Pin contract_version to the contract's content hash (stable; no self-reference problem).
-CVER="$(git hash-object "$CFG_CONTRACT_PATH")"
-python3 "$DIR/_set_field.py" "handoffs/$ID.md" contract_version "$CVER"
-python3 "$DIR/_set_field.py" "handoffs/$ID.md" contract_branch "$BRANCH"
+CVER="$(git hash-object "$P/$CFG_CONTRACT_PATH")"
+python3 "$DIR/_set_field.py" "$P/handoffs/$ID.md" contract_version "$CVER"
+python3 "$DIR/_set_field.py" "$P/handoffs/$ID.md" contract_branch "$BRANCH"
 
-python3 "$DIR/validate_handoff.py" "handoffs/$ID.md"
+python3 "$DIR/validate_handoff.py" "$P/handoffs/$ID.md"
 
-git add "$CFG_CONTRACT_PATH" "handoffs/$ID.md"
-git commit -q -m "$ID: handoff + contract change"
+git add "$P/$CFG_CONTRACT_PATH" "$P/handoffs/$ID.md"
+git commit -q -m "[$CFG_PROJECT] $ID: handoff + contract change"
 
 if [ "${DRY_RUN:-0}" = "1" ]; then
   echo "[dry-run] validated + committed $BRANCH (contract_version=$CVER); would push + open PR"
   exit 0
 fi
+
 git push -q -u origin "$BRANCH"
 gh pr create --repo "$CFG_COORDINATION_REPO" --base main --head "$BRANCH" --title "$ID" --fill
 echo "opened PR for $BRANCH — recipient: run /handoff-check"

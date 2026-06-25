@@ -5,11 +5,11 @@ name: validate-handoffs
 on:
   pull_request:
     paths:
-      - "handoffs/**"
+      - "projects/*/handoffs/**"
   push:
     branches: [main]
     paths:
-      - "handoffs/**"
+      - "projects/*/handoffs/**"
 
 jobs:
   validate:
@@ -24,10 +24,10 @@ jobs:
       - name: Install deps
         run: pip install jsonschema pyyaml
 
-      - name: Validate all handoff manifests
+      - name: Validate all handoff manifests across every project
         run: |
           shopt -s nullglob
-          files=(handoffs/[!_]*.md)   # skip _template.md and other _-prefixed files
+          files=(projects/*/handoffs/[!_]*.md)   # every project; skip _-prefixed files
           if [ ${#files[@]} -eq 0 ]; then
             echo "No handoff manifests to validate."; exit 0
           fi
