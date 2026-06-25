@@ -49,6 +49,15 @@ cp scripts/* /path/to/api-coordination/tools/
 # backend laptop: --role backend --identity bob   (same --repo and --project)
 ```
 
+**Several projects on one laptop?** Add `--local` and run it from inside each project folder —
+it writes a per-project `./.handoff/config.yml` instead of the single global one. The agent uses
+the config of whatever folder it's running in (walks up to find the nearest `.handoff/config.yml`,
+falling back to `~/.handoff/config.yml`):
+```bash
+cd ~/work/shop-web  && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project shop  --local
+cd ~/work/admin-web && ./enroll.sh --repo acme/handoff --role frontend --identity alice --project admin --local
+```
+
 <details><summary>…or the same thing by hand</summary>
 
 ```bash

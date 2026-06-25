@@ -15,9 +15,32 @@ except ImportError:
     sys.stderr.write("Missing dep. Run: pip install pyyaml\n")
     sys.exit(1)
 
-path = os.environ.get("HANDOFF_CONFIG", os.path.expanduser("~/.handoff/config.yml"))
+def find_config() -> str:
+    """$HANDOFF_CONFIG wins; else the nearest project-local .handoff/config.yml walking
+    up from the cwd; else the global ~/.handoff/config.yml. Project-local lets one laptop
+    serve many projects — run the agent inside a project and it picks up that config."""
+    env = os.environ.get("HANDOFF_CONFIG")
+    if env:
+        return os.path.expanduser(env)
+    d = os.getcwd()
+    while True:
+        cand = os.path.join(d, ".handoff", "config.yml")
+        if os.path.isfile(cand):
+            return cand
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return os.path.expanduser("~/.handoff/config.yml")
+
+
+path = find_config()
 if not os.path.isfile(path):
-    sys.stderr.write(f"missing config: {path} (copy config/handoff.config.example.yml)\n")
+    sys.stderr.write(
+        f"missing config: {path}\n"
+        "  run enroll.sh (use --local inside a project for a project-scoped config),\n"
+        "  or copy config/handoff.config.example.yml to ~/.handoff/config.yml\n"
+    )
     sys.exit(1)
 
 d = yaml.safe_load(open(path, encoding="utf-8")) or {}
