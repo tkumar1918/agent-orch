@@ -15,6 +15,5 @@ project: example-app            # which projects/<project>/ this laptop works on
 contract_path: contracts/openapi.yaml
 contract_format: openapi        # openapi | graphql | grpc
 
-# Frontend-only: where generated client types and the mock live.
+# Frontend-only: where the generated typed client lands.
 client_types_out: src/api/types.ts
-mock_port: 4010

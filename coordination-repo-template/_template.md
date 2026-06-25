@@ -31,7 +31,7 @@ so say everything here.>
 - [ ] <mirror required_actions as a checklist>
 
 ## Verification
-<How the recipient proves conformance: regen types, run against the Prism mock,
+<How the recipient proves conformance: regen the typed client from the contract,
 run contract tests.>
 
 ## Change detail (embedded — recipient can't open the source PR)

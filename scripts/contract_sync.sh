@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Agent-run. Sync local code to the shared contract; report drift vs the last sync.
-# FE regenerates the typed client + prints the mock command; BE prints provider verify.
+# FE regenerates the typed client; BE prints provider verify.
 # One command for /contract-sync.
 #
 #   contract_sync.sh [--ref <branch|sha>]   (default ref: main = released contract)
@@ -41,7 +41,6 @@ case "$CFG_ROLE" in
     else
       echo "[skip] openapi-typescript not installed; run: openapi-typescript $CONTRACT -o $CFG_CLIENT_TYPES_OUT"
     fi
-    echo "mock (dev/tests): prism mock $CONTRACT --port $CFG_MOCK_PORT"
     ;;
   backend)
     echo "verify provider: schemathesis run --base-url <local-url> $CONTRACT   (or: dredd)"

@@ -2,7 +2,7 @@
 name: contract-sync
 description: >
   Sync local code to the shared API contract from the coordination repo and report drift.
-  Frontend regenerates the typed client + mock; backend verifies its implementation against
+  Frontend regenerates the typed client; backend verifies its implementation against
   the spec. The AGENT runs it; use after /handoff-check, when starting work against a proposal,
   or to detect drift.
 ---
@@ -16,7 +16,7 @@ description: >
   - default ref is coordination `main` (released contract);
   - `--ref proposal/<id>` builds against an in-flight proposal;
   - it pulls the contract, **reports drift vs your last sync** via oasdiff, then:
-    - **frontend:** regenerates `client_types_out` and prints the Prism mock command;
+    - **frontend:** regenerates `client_types_out` (the typed client) from the contract;
     - **backend:** prints the provider-verification command (schemathesis/dredd);
   - and records the synced contract hash in `~/.handoff/last_sync`.
 

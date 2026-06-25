@@ -19,7 +19,7 @@ separate repo per project instead.)
    `proposal/<project>/<id>` branch, classifies breaking changes with `oasdiff`, drafts a
    **handoff manifest**, and (after human approval) opens a PR to the coordination repo.
 2. Frontend runs `/handoff-check` → sees the handoff (even before merge), then
-   `/contract-sync --ref proposal/<project>/<id>` regenerates its typed client + Prism mock and
+   `/contract-sync --ref proposal/<project>/<id>` regenerates its typed client and
    builds against the exact proposed shape — in parallel, without backend access.
 3. Both approve & merge the contract PR; status flows `proposed → … → completed`. Everything
    is versioned and auditable.
@@ -112,7 +112,7 @@ Agent:  runs handoff_inbox.sh, summarizes, runs contract_sync.sh (regen types + 
 ```
 
 Tooling the skills expect on PATH: `gh`, `oasdiff`, plus per-format consumers
-(`openapi-typescript` + `@stoplight/prism-cli` for FE; `schemathesis` or `dredd` for BE).
+(`openapi-typescript` for FE; `schemathesis` or `dredd` for BE).
 Python deps for validation: `pip install jsonschema pyyaml`.
 
 ## Try it locally (no second laptop)

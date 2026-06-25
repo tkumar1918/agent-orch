@@ -39,8 +39,8 @@ Branches in the coordination repo are project-qualified: `proposal/<project>/<id
    `proposed` and visible to FE.
 4. **Receive.** FE dev runs `/handoff-check`: agent summarizes intent + required actions,
    transitions to `acknowledged`, then `/contract-sync --ref proposal/example-app/2026-06-24-be-001-a1b2`
-   regenerates `types.ts` and refreshes the Prism mock.
-5. **Build.** FE implements against the mock; contract tests pass. Status → `in-progress`.
+   regenerates `types.ts` from the proposed contract.
+5. **Build.** FE implements against the typed client; contract tests pass. Status → `in-progress`.
 6. **Done.** FE marks `completed`; both sides aligned, whole exchange auditable in git.
 
 ## Who runs what

@@ -58,7 +58,7 @@ repo through these. They draft and propose; humans approve. See [workflow.md](wo
   `breaking: true` handoff.
 - Status state machine with illegal transitions rejected.
 - Pinned `contract_version` SHA + drift detection in `/contract-sync`.
-- Contract tests on both sides (FE: typed client + Prism mock; BE: provider verification).
+- Contract tests on both sides (FE: typed client generated from the spec; BE: provider verification).
 - Append-only git history = full audit trail.
 
 ## Format-agnostic

@@ -95,9 +95,8 @@ project: $PROJECT
 contract_path: $CONTRACT_PATH
 contract_format: openapi
 
-# Frontend-only: where generated client types and the mock live.
+# Frontend-only: where the generated typed client lands.
 client_types_out: src/api/types.ts
-mock_port: 4010
 EOF
   echo "wrote config     -> $CONFIG"
   echo "  (project-local — add .handoff/ to this repo's .gitignore)"
@@ -110,7 +109,6 @@ for c in python3 oasdiff; do command -v "$c" >/dev/null || miss+=("$c"); done
 python3 -c 'import yaml, jsonschema' 2>/dev/null || miss+=("python: pyyaml+jsonschema (pip install pyyaml jsonschema)")
 if [ "$ROLE" = frontend ]; then
   command -v openapi-typescript >/dev/null || miss+=("openapi-typescript (npm i -g openapi-typescript)")
-  command -v prism >/dev/null || miss+=("prism (npm i -g @stoplight/prism-cli)")
 else
   command -v schemathesis >/dev/null || miss+=("schemathesis (pip install schemathesis)")
 fi
