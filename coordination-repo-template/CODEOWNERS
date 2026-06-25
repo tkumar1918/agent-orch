@@ -2,17 +2,17 @@
 # A merge is the human-in-the-loop handoff approval, enforced by branch protection
 # (require review from Code Owners on the protected `main` branch).
 #
-# Scope review PER PROJECT: each project's teams own their own folder. Contract changes
-# are a cross-team commitment, so list BOTH teams for that project. Copy this block per
-# project you add.
+# Scope review PER PROJECT: each project's teams own their own folder. Gate the CONTRACT —
+# that is the cross-team commitment, so list BOTH teams. The proposal PR carries the contract
+# AND the handoff manifest together, so reviewing the contract reviews the handoff too.
+# handoffs/ is deliberately NOT gated: status updates commit straight to main as plain state
+# markers (see tools/handoff_status.sh). Copy this block per project you add.
 
 /projects/example-app/contracts/   @acme/example-fe @acme/example-be
 /projects/example-app/decisions/   @acme/example-fe @acme/example-be
-/projects/example-app/handoffs/    @acme/example-fe @acme/example-be
 
 # Add the next project the same way:
 # /projects/<project>/contracts/   @acme/<project>-fe @acme/<project>-be
-# /projects/<project>/handoffs/    @acme/<project>-fe @acme/<project>-be
 
 # Shared schema / tooling / CI: platform owners.
 /_schema/      @acme/platform-team

@@ -23,8 +23,9 @@ description: >
    `--ref <contract_branch>` when the handoff's `contract_status` is `proposed`). This
    regenerates the client and reports any drift since your last sync.
 5. **Acknowledge (after human confirm).**
-   `~/.handoff/tools/handoff_status.sh <id> acknowledged` opens a small PR recording it.
-   Move to `in-progress` when you start and `completed` when done (same command).
+   `~/.handoff/tools/handoff_status.sh <id> acknowledged` commits the status straight to main
+   (no PR — a status marker isn't a contract change). Move to `in-progress` when you start and
+   `completed` when done (same command).
 
 ## Notes
 - Acknowledging only records you have SEEN it; it is a real human-confirmed step.
